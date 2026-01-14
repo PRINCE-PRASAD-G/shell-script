@@ -26,11 +26,23 @@ read -rp "Job name (default: docker-logs): " JOB_NAME
 JOB_NAME=${JOB_NAME:-docker-logs}
 
 # -------------------------------
-# Install dependencies
+# Install base dependencies
 # -------------------------------
-echo "🔹 Installing dependencies..."
+echo "🔹 Installing base dependencies..."
 apt-get update -y
-apt-get install -y gpg wget ca-certificates docker.io
+apt-get install -y gpg wget ca-certificates
+
+# -------------------------------
+# Docker check (SAFE)
+# -------------------------------
+echo "🔹 Checking Docker installation..."
+if command -v docker &>/dev/null; then
+  echo "✅ Docker already installed. Skipping Docker installation."
+else
+  echo "⚠️ Docker not found. Installing docker.io..."
+  apt-get install -y docker.io
+  systemctl enable --now docker
+fi
 
 # -------------------------------
 # Add Grafana repo
@@ -124,7 +136,7 @@ EOF
 # Create systemd service
 # -------------------------------
 echo "🔹 Creating systemd service..."
-ALLOY_BIN=$(which alloy)
+ALLOY_BIN=$(command -v alloy)
 
 cat <<EOF >/etc/systemd/system/alloy.service
 [Unit]
@@ -148,11 +160,9 @@ echo "🔹 Enabling and starting Alloy..."
 systemctl daemon-reexec
 systemctl daemon-reload
 systemctl enable --now alloy
-
-systemctl restart docker
 systemctl restart alloy
 
 echo "====================================="
 echo "✅ Grafana Alloy setup completed"
-echo "📊 Check logs: journalctl -u alloy -f"
+echo "📊 View logs: journalctl -u alloy -f"
 echo "====================================="
