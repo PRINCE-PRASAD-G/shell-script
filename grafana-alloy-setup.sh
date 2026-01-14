@@ -26,6 +26,14 @@ read -rp "Job name (default: docker-logs): " JOB_NAME
 JOB_NAME=${JOB_NAME:-docker-logs}
 
 # -------------------------------
+# Input validation (IMPORTANT)
+# -------------------------------
+if [[ -z "$LOKI_PASSWORD" ]]; then
+  echo "❌ Grafana Cloud API key cannot be empty"
+  exit 1
+fi
+
+# -------------------------------
 # Install base dependencies
 # -------------------------------
 echo "🔹 Installing base dependencies..."
@@ -115,8 +123,8 @@ loki.source.docker "docker_logs" {
   host    = "unix:///var/run/docker.sock"
   targets = discovery.relabel.docker_containers.output
   labels = {
-    job         = "${JOB_NAME}"
-    environment = "${ENVIRONMENT}"
+    job         = "${JOB_NAME}",
+    environment = "${ENVIRONMENT}",
   }
   forward_to = [loki.write.grafana_cloud.receiver]
 }
